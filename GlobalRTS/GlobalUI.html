@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cesium Globe - Robot Control</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.124/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.124/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        html, body, #cesiumContainer {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        #loadingOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        #loadingOverlay h1 {
+            color: #4fc3f7;
+            font-family: sans-serif;
+        }
+        
+        #infoPanel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            z-index: 1000;
+            font-size: 14px;
+            max-width: 320px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        #infoPanel h3 {
+            margin: 0 0 10px 0;
+            color: #4fc3f7;
+        }
+        
+        #clickCoords {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #444;
+        }
+        
+        #robotStatus {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(76, 175, 80, 0.2);
+            border-radius: 4px;
+            border-left: 3px solid #4caf50;
+        }
+        
+        .coord-label {
+            color: #aaa;
+            font-size: 12px;
+        }
+        
+        .coord-value {
+            color: #4fc3f7;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.85);
+            padding: 12px 15px;
+            border-radius: 8px;
+            color: #aaa;
+            font-size: 12px;
+            font-family: sans-serif;
+            z-index: 1000;
+        }
+        
+        #controls h4 {
+            margin: 0 0 8px 0;
+            color: #4fc3f7;
+            font-size: 13px;
+        }
+        
+        #controls div { margin: 4px 0; }
+        #controls span { color: #fff; }
+        
+        #distanceInfo {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #444;
+            color: #ffd54f;
+        }
+        
+        #selectionBox {
+            position: absolute;
+            border: 2px solid #4fc3f7;
+            background: rgba(79, 195, 247, 0.15);
+            pointer-events: none;
+            z-index: 999;
+            display: none;
+        }
+        
+        #selectedInfo {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #444;
+            color: #4fc3f7;
+        }
+        
+        #unitInfoBox {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            border-left: 4px solid #00bcd4;
+            z-index: 1000;
+            font-size: 13px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-width: 200px;
+            display: none;
+        }
+        
+        #unitInfoBox h4 {
+            margin: 0 0 10px 0;
+            color: #00bcd4;
+            font-size: 15px;
+        }
+        
+        #unitInfoBox .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+        }
+        
+        #unitInfoBox .info-label {
+            color: #888;
+        }
+        
+        #unitInfoBox .info-value {
+            color: #fff;
+            font-family: monospace;
+        }
+        
+        #unitInfoBox .status-idle { color: #4caf50; }
+        #unitInfoBox .status-moving { color: #ff9800; }
+        #unitInfoBox .status-error { color: #f44336; }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    <div id="selectionBox"></div>
+    <div id="loadingOverlay"><h1>Loading 3D Tiles...</h1></div>
+    
+    <div id="infoPanel">
+        <h3>🤖 Robot Control</h3>
+        <div id="clickCoords">
+            <div class="coord-label">Target position:</div>
+            <div class="coord-value" id="latValue">—</div>
+            <div class="coord-value" id="lonValue">—</div>
+            <div class="coord-value" id="altValue">—</div>
+        </div>
+        <div id="robotStatus">
+            <div class="coord-label">Robot Alpha:</div>
+            <div class="coord-value" id="robotPos">34.0522° N, 118.2437° W</div>
+            <div class="coord-value" id="robotAlt">Alt: 0m</div>
+        </div>
+        <div id="distanceInfo">
+            <div class="coord-label">Distance to target:</div>
+            <div class="coord-value" id="distanceValue">—</div>
+            <div class="coord-value" id="bearingValue">—</div>
+        </div>
+        <div id="selectedInfo">
+            <div class="coord-label">Selected units:</div>
+            <div class="coord-value" id="selectedUnits">None</div>
+        </div>
+    </div>
+    
+    <div id="controls">
+        <h4>Controls</h4>
+        <div><span>Left-drag</span> — Rotate</div>
+        <div><span>Ctrl+Left-drag</span> — Select units</div>
+        <div><span>Middle-drag</span> — Orbit</div>
+        <div><span>Scroll</span> — Zoom</div>
+        <div style="margin-top: 10px; color: #4fc3f7;"><span>Right-click</span> — Set waypoint</div>
+    </div>
+    
+    <div id="unitInfoBox">
+        <h4 id="unitName">Robot Alpha</h4>
+        <div class="info-row">
+            <span class="info-label">Status</span>
+            <span class="info-value status-idle" id="unitStatus">Idle</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Battery</span>
+            <span class="info-value" id="unitBattery">87%</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Speed</span>
+            <span class="info-value" id="unitSpeed">0 m/s</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Position</span>
+            <span class="info-value" id="unitPosition">—</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Altitude</span>
+            <span class="info-value" id="unitAltitude">—</span>
+        </div>
+    </div>
+
+    <script type="module">
+        // Your Cesium Ion access token
+        Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhY2QwYzljZC01YWNmLTQwNTEtOTYwYi0zODJmYTFhYmJlMDYiLCJpZCI6Mzc2NTAxLCJpYXQiOjE3Njc5MTcyMzd9.XjmYQSp3HkH1ZsrbnAlq7dL_P_43K6o7JXHPO9rpcvw';
+
+        // Robot starting position (Downtown LA)
+        const ROBOT_START = {
+            lon: -118.2437,
+            lat: 34.0522,
+            alt: 0
+        };
+
+        const viewer = new Cesium.Viewer('cesiumContainer', {
+            globe: false,
+            skyAtmosphere: new Cesium.SkyAtmosphere(),
+            sceneModePicker: false,
+            baseLayerPicker: false,
+            geocoder: Cesium.IonGeocodeProviderType.GOOGLE,
+            animation: false,
+            timeline: false,
+            navigationHelpButton: false,
+            fullscreenButton: true,
+            homeButton: false
+        });
+
+        // ==========================================
+        // CAMERA CONTROLS - RTS STYLE
+        // ==========================================
+        const controller = viewer.scene.screenSpaceCameraController;
+        
+        // Left-drag = rotate the globe
+        controller.rotateEventTypes = [Cesium.CameraEventType.LEFT_DRAG];
+        
+        // Middle-drag = tilt/orbit camera around
+        controller.tiltEventTypes = [Cesium.CameraEventType.MIDDLE_DRAG];
+        
+        // Scroll wheel = zoom
+        controller.zoomEventTypes = [Cesium.CameraEventType.WHEEL];
+        
+        // Disable everything else
+        controller.lookEventTypes = [];
+        controller.translateEventTypes = [];
+        
+        // No inertia - direct control
+        controller.inertiaSpin = 0;
+        controller.inertiaTranslate = 0;
+        controller.inertiaZoom = 0;
+        
+        // ==========================================
+
+        try {
+            // Load Google Photorealistic 3D Tiles
+            const tileset = await Cesium.Cesium3DTileset.fromIonAssetId(2275207);
+            viewer.scene.primitives.add(tileset);
+            
+            // Hide loading overlay
+            document.getElementById('loadingOverlay').style.display = 'none';
+            
+            // Fly to LA
+            viewer.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(ROBOT_START.lon, ROBOT_START.lat, 500),
+                orientation: {
+                    heading: Cesium.Math.toRadians(0),
+                    pitch: Cesium.Math.toRadians(-45),
+                    roll: 0
+                },
+                duration: 3
+            });
+
+            // Add robot marker - green center, white outline
+            const robot = viewer.entities.add({
+                name: 'Robot Alpha',
+                position: Cesium.Cartesian3.fromDegrees(ROBOT_START.lon, ROBOT_START.lat, ROBOT_START.alt + 2),
+                point: {
+                    pixelSize: 16,
+                    color: Cesium.Color.LIME,
+                    outlineColor: Cesium.Color.WHITE,
+                    outlineWidth: 3,
+                    disableDepthTestDistance: Number.POSITIVE_INFINITY
+                },
+                label: {
+                    text: '🤖 Robot Alpha',
+                    font: 'bold 14px sans-serif',
+                    style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                    outlineWidth: 2,
+                    verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                    pixelOffset: new Cesium.Cartesian2(0, -28),
+                    disableDepthTestDistance: Number.POSITIVE_INFINITY
+                },
+                // Custom properties for robot info
+                properties: {
+                    type: 'robot',
+                    battery: 87,
+                    status: 'Idle',
+                    speed: 0,
+                    lastUpdate: new Date().toISOString()
+                }
+            });
+            
+            // Selection ring (larger cyan ring behind the robot point)
+            const selectionRing = viewer.entities.add({
+                name: 'SelectionRing',
+                position: new Cesium.CallbackProperty(() => {
+                    return robot.position.getValue(viewer.clock.currentTime);
+                }, false),
+                point: {
+                    pixelSize: 28,
+                    color: Cesium.Color.TRANSPARENT,
+                    outlineColor: Cesium.Color.CYAN,
+                    outlineWidth: 3,
+                    disableDepthTestDistance: Number.POSITIVE_INFINITY
+                },
+                show: false
+            });
+
+            let waypoint = null;
+            let pathLine = null;
+
+            // Calculate distance between two points
+            function calculateDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371000; // Earth radius in meters
+                const φ1 = lat1 * Math.PI / 180;
+                const φ2 = lat2 * Math.PI / 180;
+                const Δφ = (lat2 - lat1) * Math.PI / 180;
+                const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                          Math.cos(φ1) * Math.cos(φ2) *
+                          Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+                return R * c;
+            }
+
+            // Calculate bearing between two points
+            function calculateBearing(lat1, lon1, lat2, lon2) {
+                const φ1 = lat1 * Math.PI / 180;
+                const φ2 = lat2 * Math.PI / 180;
+                const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+                const y = Math.sin(Δλ) * Math.cos(φ2);
+                const x = Math.cos(φ1) * Math.sin(φ2) -
+                          Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+                const θ = Math.atan2(y, x);
+                
+                return ((θ * 180 / Math.PI) + 360) % 360;
+            }
+
+            // Click handler for setting waypoints
+            const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+            
+            handler.setInputAction(function(click) {
+                const cartesian = viewer.scene.pickPosition(click.position);
+                
+                if (Cesium.defined(cartesian)) {
+                    const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+                    const lat = Cesium.Math.toDegrees(cartographic.latitude);
+                    const lon = Cesium.Math.toDegrees(cartographic.longitude);
+                    const alt = cartographic.height;
+                    
+                    // Update UI with target position
+                    document.getElementById('latValue').textContent = `Lat: ${lat.toFixed(6)}°`;
+                    document.getElementById('lonValue').textContent = `Lon: ${lon.toFixed(6)}°`;
+                    document.getElementById('altValue').textContent = `Alt: ${alt.toFixed(1)}m`;
+                    
+                    // Calculate distance and bearing from robot to target
+                    const distance = calculateDistance(ROBOT_START.lat, ROBOT_START.lon, lat, lon);
+                    const bearing = calculateBearing(ROBOT_START.lat, ROBOT_START.lon, lat, lon);
+                    
+                    document.getElementById('distanceValue').textContent = 
+                        distance < 1000 
+                            ? `${distance.toFixed(1)} m` 
+                            : `${(distance/1000).toFixed(2)} km`;
+                    document.getElementById('bearingValue').textContent = `Bearing: ${bearing.toFixed(1)}°`;
+                    
+                    // Remove old waypoint and path
+                    if (waypoint) viewer.entities.remove(waypoint);
+                    if (pathLine) viewer.entities.remove(pathLine);
+                    
+                    // Add new waypoint
+                    waypoint = viewer.entities.add({
+                        position: Cesium.Cartesian3.fromDegrees(lon, lat, alt + 2),
+                        point: {
+                            pixelSize: 14,
+                            color: Cesium.Color.RED,
+                            outlineColor: Cesium.Color.WHITE,
+                            outlineWidth: 2,
+                            disableDepthTestDistance: Number.POSITIVE_INFINITY
+                        },
+                        label: {
+                            text: '📍 Target',
+                            font: '12px sans-serif',
+                            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                            outlineWidth: 2,
+                            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                            pixelOffset: new Cesium.Cartesian2(0, -18),
+                            disableDepthTestDistance: Number.POSITIVE_INFINITY
+                        }
+                    });
+                    
+                    // Draw path line from robot to waypoint
+                    pathLine = viewer.entities.add({
+                        polyline: {
+                            positions: [
+                                Cesium.Cartesian3.fromDegrees(ROBOT_START.lon, ROBOT_START.lat, ROBOT_START.alt + 2),
+                                Cesium.Cartesian3.fromDegrees(lon, lat, alt + 2)
+                            ],
+                            width: 4,
+                            material: new Cesium.PolylineDashMaterialProperty({
+                                color: Cesium.Color.YELLOW,
+                                dashLength: 16
+                            }),
+                            clampToGround: false
+                        }
+                    });
+                    
+                    // Log navigation command (this is where you'd send to robot)
+                    const navCommand = {
+                        type: 'NAVIGATE',
+                        target: { lat, lon, alt },
+                        distance: distance,
+                        bearing: bearing
+                    };
+                    console.log('Navigation command:', navCommand);
+                    
+                    // TODO: Send to robot via WebSocket/MQTT
+                    // ws.send(JSON.stringify(navCommand));
+                }
+            }, Cesium.ScreenSpaceEventType.RIGHT_CLICK);
+
+            // ==========================================
+            // CTRL+DRAG BOX SELECTION (RTS style)
+            // Using native DOM events for reliability
+            // ==========================================
+            const selectionBox = document.getElementById('selectionBox');
+            const unitInfoBox = document.getElementById('unitInfoBox');
+            const canvas = viewer.scene.canvas;
+            let isSelecting = false;
+            let selectionStart = { x: 0, y: 0 };
+            
+            // Track all units (robots) for selection
+            const units = [{ entity: robot, ring: selectionRing }];
+            let selectedUnits = [];
+            
+            // Function to select a unit
+            function selectUnit(unitObj) {
+                if (!selectedUnits.includes(unitObj)) {
+                    selectedUnits.push(unitObj);
+                }
+                // Show selection ring
+                unitObj.ring.show = true;
+                
+                // Show info box with unit data
+                const props = unitObj.entity.properties;
+                const pos = unitObj.entity.position.getValue(viewer.clock.currentTime);
+                const cartographic = Cesium.Cartographic.fromCartesian(pos);
+                
+                document.getElementById('unitName').textContent = unitObj.entity.name;
+                document.getElementById('unitStatus').textContent = props.status.getValue();
+                document.getElementById('unitBattery').textContent = props.battery.getValue() + '%';
+                document.getElementById('unitSpeed').textContent = props.speed.getValue() + ' m/s';
+                document.getElementById('unitPosition').textContent = 
+                    Cesium.Math.toDegrees(cartographic.latitude).toFixed(4) + '°, ' +
+                    Cesium.Math.toDegrees(cartographic.longitude).toFixed(4) + '°';
+                document.getElementById('unitAltitude').textContent = cartographic.height.toFixed(1) + ' m';
+                
+                unitInfoBox.style.display = 'block';
+            }
+            
+            // Function to deselect all units
+            function deselectAll() {
+                selectedUnits.forEach(unitObj => {
+                    unitObj.ring.show = false;
+                });
+                selectedUnits = [];
+                unitInfoBox.style.display = 'none';
+                document.getElementById('selectedUnits').textContent = 'None';
+            }
+            
+            // Left click to select single unit (or deselect if clicking empty space)
+            handler.setInputAction(function(click) {
+                const picked = viewer.scene.pick(click.position);
+                
+                if (Cesium.defined(picked) && picked.id) {
+                    // Check if clicked on a unit
+                    const clickedUnit = units.find(u => u.entity === picked.id);
+                    if (clickedUnit) {
+                        deselectAll();
+                        selectUnit(clickedUnit);
+                        document.getElementById('selectedUnits').textContent = clickedUnit.entity.name;
+                        console.log('Selected:', clickedUnit.entity.name);
+                    }
+                } else {
+                    // Clicked empty space - deselect all
+                    deselectAll();
+                }
+            }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+            
+            // Native DOM events for Ctrl+drag selection
+            canvas.addEventListener('mousedown', function(e) {
+                if (e.ctrlKey && e.button === 0) {
+                    e.preventDefault();
+                    isSelecting = true;
+                    selectionStart = { x: e.clientX, y: e.clientY };
+                    selectionBox.style.left = e.clientX + 'px';
+                    selectionBox.style.top = e.clientY + 'px';
+                    selectionBox.style.width = '0px';
+                    selectionBox.style.height = '0px';
+                    selectionBox.style.display = 'block';
+                    controller.enableInputs = false;
+                }
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isSelecting) return;
+                
+                const startX = Math.min(selectionStart.x, e.clientX);
+                const startY = Math.min(selectionStart.y, e.clientY);
+                const width = Math.abs(e.clientX - selectionStart.x);
+                const height = Math.abs(e.clientY - selectionStart.y);
+                
+                selectionBox.style.left = startX + 'px';
+                selectionBox.style.top = startY + 'px';
+                selectionBox.style.width = width + 'px';
+                selectionBox.style.height = height + 'px';
+            });
+            
+            document.addEventListener('mouseup', function(e) {
+                if (!isSelecting) return;
+                
+                isSelecting = false;
+                selectionBox.style.display = 'none';
+                controller.enableInputs = true;
+                
+                // Calculate selection bounds
+                const minX = Math.min(selectionStart.x, e.clientX);
+                const maxX = Math.max(selectionStart.x, e.clientX);
+                const minY = Math.min(selectionStart.y, e.clientY);
+                const maxY = Math.max(selectionStart.y, e.clientY);
+                
+                // Deselect all first
+                deselectAll();
+                
+                // Find units within selection box
+                units.forEach(unitObj => {
+                    const screenPos = Cesium.SceneTransforms.wgs84ToWindowCoordinates(
+                        viewer.scene, unitObj.entity.position.getValue(viewer.clock.currentTime)
+                    );
+                    
+                    if (screenPos && 
+                        screenPos.x >= minX && screenPos.x <= maxX &&
+                        screenPos.y >= minY && screenPos.y <= maxY) {
+                        selectUnit(unitObj);
+                    }
+                });
+                
+                // Update UI
+                if (selectedUnits.length > 0) {
+                    const names = selectedUnits.map(u => u.entity.name).join(', ');
+                    document.getElementById('selectedUnits').textContent = names;
+                    console.log('Selected units:', names);
+                }
+            });
+
+            console.log('Cesium ready with Google 3D Tiles!');
+            console.log('Camera controls customized - Ctrl+drag disabled');
+            
+        } catch (error) {
+            console.error('Error loading 3D tiles:', error);
+            document.getElementById('loadingOverlay').innerHTML = 
+                '<h1 style="color:red;">Error: ' + error.message + '</h1>';
+        }
+    </script>
+</body>
+</html>
