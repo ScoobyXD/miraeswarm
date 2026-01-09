@@ -76,26 +76,80 @@
         #distanceInfo { margin-top: 8px; padding-top: 8px; border-top: 1px solid #444; color: #ffd54f; }
         #selectedInfo { margin-top: 8px; padding-top: 8px; border-top: 1px solid #444; color: #4fc3f7; }
         
-        #controls {
+        #togglePanel {
             position: absolute;
             bottom: 10px;
             left: 10px;
-            background: rgba(0,0,0,0.85);
-            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px;
             border-radius: 8px;
-            color: #aaa;
-            font-size: 12px;
-            font-family: sans-serif;
             z-index: 1000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            cursor: move;
+            user-select: none;
         }
-        #controls h4 { margin: 0 0 8px 0; color: #4fc3f7; font-size: 13px; }
-        #controls div { margin: 4px 0; }
-        #controls span { color: #fff; }
+        
+        .panel-header {
+            cursor: move;
+            user-select: none;
+        }
+        
+        .draggable {
+            cursor: move;
+        }
+        
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+        
+        .toggle-row:last-child {
+            border-bottom: none;
+        }
+        
+        .toggle-label {
+            color: #aaa;
+            font-size: 13px;
+            margin-right: 15px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: #333;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #4fc3f7;
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        
+        .toggle-switch.active::after {
+            transform: translateX(20px);
+        }
         
         #unitInfoBox {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            bottom: 10px;
+            left: 200px;
             background: rgba(0, 0, 0, 0.9);
             color: #fff;
             padding: 15px 20px;
@@ -111,6 +165,297 @@
         #unitInfoBox .info-row { display: flex; justify-content: space-between; margin: 6px 0; }
         #unitInfoBox .info-label { color: #888; }
         #unitInfoBox .info-value { color: #fff; font-family: monospace; }
+        
+        #newsPanel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 280px;
+            max-height: 70vh;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            border-radius: 8px;
+            border-left: 4px solid #FF7A00;
+            z-index: 1000;
+            font-size: 13px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #newsPanel h4 {
+            margin: 0;
+            padding: 12px 15px;
+            color: #FF7A00;
+            font-size: 14px;
+            background: rgba(255, 122, 0, 0.15);
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        #newsPanel h4 .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #FF7A00;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        
+        #newsList {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        
+        .news-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #222;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .news-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .news-item:last-child {
+            border-bottom: none;
+        }
+        
+        .news-item .news-source {
+            font-size: 10px;
+            color: #FF7A00;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        
+        .news-item .news-title {
+            font-size: 13px;
+            color: #eee;
+            line-height: 1.4;
+            margin-bottom: 4px;
+        }
+        
+        .news-item .news-time {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .news-item.breaking {
+            background: rgba(255, 122, 0, 0.15);
+            border-left: 3px solid #FF7A00;
+        }
+        
+        .news-item.breaking .news-source {
+            color: #FF9A40;
+        }
+        
+        #newsPanel .news-loading {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+        }
+        
+        /* Health Panel */
+        #healthPanel {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 380px;
+            max-height: calc(100vh - 40px);
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            border-radius: 8px;
+            border-left: 4px solid #1565c0;
+            z-index: 1000;
+            font-size: 13px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            display: none;
+            flex-direction: column;
+        }
+        
+        #healthPanel h4 {
+            margin: 0;
+            padding: 12px 15px;
+            color: #1565c0;
+            font-size: 14px;
+            background: rgba(21, 101, 192, 0.1);
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        #healthPanel h4 .heart-icon {
+            animation: heartbeat 1s infinite;
+        }
+        
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        #healthContent {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .calendar-container {
+            margin-bottom: 15px;
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .calendar-header button {
+            background: #333;
+            border: none;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .calendar-header button:hover {
+            background: #444;
+        }
+        
+        .calendar-header .month-year {
+            color: #1565c0;
+            font-weight: bold;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+        
+        .calendar-day-header {
+            text-align: center;
+            color: #666;
+            font-size: 10px;
+            padding: 5px 0;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            background: #1a1a1a;
+            color: #888;
+        }
+        
+        .calendar-day.current-month {
+            color: #fff;
+        }
+        
+        .calendar-day.today {
+            border: 1px solid #1565c0;
+        }
+        
+        .calendar-day.has-data {
+            background: linear-gradient(135deg, #1a1a1a 0%, #1a2a3a 100%);
+        }
+        
+        .calendar-day:hover {
+            background: #333;
+        }
+        
+        .calendar-day.sleep-good { background: rgba(0, 230, 118, 0.5); }
+        .calendar-day.sleep-ok { background: rgba(255, 215, 0, 0.5); }
+        .calendar-day.sleep-bad { background: rgba(255, 82, 82, 0.5); }
+        
+        /* Sleep tooltip */
+        #sleepTooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid #1565c0;
+            border-radius: 8px;
+            padding: 12px;
+            z-index: 2000;
+            pointer-events: none;
+            display: none;
+            min-width: 200px;
+        }
+        
+        #sleepTooltip .tooltip-date {
+            color: #1565c0;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        
+        #sleepTooltip .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+            font-size: 11px;
+        }
+        
+        #sleepTooltip .tooltip-label {
+            color: #888;
+        }
+        
+        #sleepTooltip .tooltip-value {
+            color: #fff;
+            font-family: monospace;
+        }
+        
+        .health-loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        
+        .health-error {
+            text-align: center;
+            color: #f44336;
+            padding: 20px;
+        }
+        
+        .today-summary {
+            background: rgba(21, 101, 192, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+        
+        .today-summary h5 {
+            color: #1565c0;
+            margin: 0 0 10px 0;
+            font-size: 12px;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+            font-size: 12px;
+        }
+        
+        .summary-label { color: #888; }
+        .summary-value { color: #fff; font-family: monospace; }
     </style>
 </head>
 <body>
@@ -143,13 +488,19 @@
         </div>
     </div>
     
-    <div id="controls">
-        <h4>Controls</h4>
-        <div><span>Left-drag</span> — Rotate</div>
-        <div><span>Ctrl+Left-drag</span> — Select units</div>
-        <div><span>Middle-drag</span> — Orbit</div>
-        <div><span>Scroll</span> — Zoom</div>
-        <div style="margin-top: 10px; color: #4fc3f7;"><span>Right-click</span> — Set waypoint</div>
+    <div id="togglePanel">
+        <div class="toggle-row">
+            <span class="toggle-label">Robot Controller</span>
+            <div class="toggle-switch active" id="toggleRobotController"></div>
+        </div>
+        <div class="toggle-row">
+            <span class="toggle-label">Global News</span>
+            <div class="toggle-switch active" id="toggleNews"></div>
+        </div>
+        <div class="toggle-row">
+            <span class="toggle-label">Personal Health</span>
+            <div class="toggle-switch" id="toggleHealth"></div>
+        </div>
     </div>
     
     <div id="unitInfoBox">
@@ -175,9 +526,54 @@
             <span class="info-value" id="unitAltitude">—</span>
         </div>
     </div>
+    
+    <div id="newsPanel">
+        <h4><span class="live-dot"></span> GLOBAL NEWS FEED</h4>
+        <div id="newsList">
+            <div class="news-loading">Loading news...</div>
+        </div>
+    </div>
+    
+    <div id="healthPanel">
+        <h4><span class="heart-icon">🌙</span> PERSONAL HEALTH</h4>
+        <div id="healthContent">
+            <div class="health-loading">Loading health data...</div>
+        </div>
+    </div>
+    
+    <div id="sleepTooltip">
+        <div class="tooltip-date"></div>
+        <div class="tooltip-row">
+            <span class="tooltip-label">Total Sleep</span>
+            <span class="tooltip-value" id="ttTotalSleep">—</span>
+        </div>
+        <div class="tooltip-row">
+            <span class="tooltip-label">Deep Sleep</span>
+            <span class="tooltip-value" id="ttDeepSleep">—</span>
+        </div>
+        <div class="tooltip-row">
+            <span class="tooltip-label">REM Sleep</span>
+            <span class="tooltip-value" id="ttRemSleep">—</span>
+        </div>
+        <div class="tooltip-row">
+            <span class="tooltip-label">Light Sleep</span>
+            <span class="tooltip-value" id="ttLightSleep">—</span>
+        </div>
+    </div>
 
+    <!-- Load config file with API keys (add CONFIG.js to .gitignore!) -->
+    <script src="CONFIG.js"></script>
+    
     <script type="module">
-        Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJhY2QwYzljZC01YWNmLTQwNTEtOTYwYi0zODJmYTFhYmJlMDYiLCJpZCI6Mzc2NTAxLCJpYXQiOjE3Njc5MTcyMzd9.XjmYQSp3HkH1ZsrbnAlq7dL_P_43K6o7JXHPO9rpcvw';
+        // Use CONFIG for API keys, with fallbacks for when CONFIG.js is missing
+        const OURA_TOKEN = (typeof CONFIG !== 'undefined' && CONFIG.OURA_API_TOKEN) 
+            ? CONFIG.OURA_API_TOKEN 
+            : 'YOUR_OURA_TOKEN_HERE';
+        const CESIUM_TOKEN = (typeof CONFIG !== 'undefined' && CONFIG.CESIUM_API_TOKEN) 
+            ? CONFIG.CESIUM_API_TOKEN 
+            : 'YOUR_CESIUM_TOKEN_HERE';
+        
+        Cesium.Ion.defaultAccessToken = CESIUM_TOKEN;
 
         const ROBOT_START = { lon: -118.2437, lat: 34.0522, alt: 0 };
 
@@ -260,6 +656,7 @@
 
             const units = [{ entity: robot, ring: selectionRing, waypoint: null, pathLine: null }];
             let selectedUnits = [];
+            let robotControllerEnabled = true;
 
             // Helpers
             function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -316,8 +713,11 @@
 
             const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
             
-            // Right-click: set waypoint (only if a unit is selected)
+            // Right-click: set waypoint (only if a unit is selected and robot controller enabled)
             handler.setInputAction(function(click) {
+                // Only allow waypoint if robot controller is enabled
+                if (!robotControllerEnabled) return;
+                
                 // Only allow waypoint if we have a selected unit
                 if (selectedUnits.length === 0) {
                     console.log('No unit selected - cannot set waypoint');
@@ -374,6 +774,9 @@
             
             // Left-click: select unit or deselect
             handler.setInputAction(function(click) {
+                // Only allow selection if robot controller is enabled
+                if (!robotControllerEnabled) return;
+                
                 const picked = viewer.scene.pick(click.position);
                 if (Cesium.defined(picked) && picked.id) {
                     const unit = units.find(u => u.entity === picked.id);
@@ -496,6 +899,485 @@
             });
 
             console.log('Ready! Hold Ctrl and drag to box-select units.');
+            
+            // ==========================================
+            // GLOBAL NEWS FEED
+            // ==========================================
+            const newsList = document.getElementById('newsList');
+            
+            // RSS feeds to fetch - Global coverage from every continent (English language)
+            const RSS_FEEDS = [
+                // NORTH AMERICA
+                { name: 'Reuters', url: 'https://feeds.reuters.com/reuters/topNews', breaking: true },
+                { name: 'AP News', url: 'https://rsshub.app/apnews/topics/apf-topnews', breaking: true },
+                { name: 'CNN', url: 'http://rss.cnn.com/rss/edition_world.rss', breaking: false },
+                { name: 'Fox News', url: 'https://moxie.foxnews.com/google-publisher/world.xml', breaking: false },
+                { name: 'CBC Canada', url: 'https://www.cbc.ca/cmlink/rss-world', breaking: false },
+                { name: 'Mexico News', url: 'https://mexiconewsdaily.com/feed/', breaking: false },
+                
+                // SOUTH AMERICA
+                { name: 'Brazil Report', url: 'https://brazilian.report/feed/', breaking: false },
+                { name: 'Buenos Aires Times', url: 'https://www.batimes.com.ar/feed', breaking: false },
+                
+                // EUROPE
+                { name: 'BBC World', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', breaking: false },
+                { name: 'The Guardian', url: 'https://www.theguardian.com/world/rss', breaking: false },
+                { name: 'DW Germany', url: 'https://rss.dw.com/rdf/rss-en-world', breaking: false },
+                { name: 'France 24', url: 'https://www.france24.com/en/rss', breaking: false },
+                { name: 'Poland In', url: 'https://polandin.com/rss/news', breaking: false },
+                
+                // RUSSIA & EASTERN EUROPE  
+                { name: 'Moscow Times', url: 'https://www.themoscowtimes.com/rss/news', breaking: false },
+                { name: 'Kyiv Independent', url: 'https://kyivindependent.com/feed/', breaking: false },
+                
+                // MIDDLE EAST
+                { name: 'Al Jazeera', url: 'https://www.aljazeera.com/xml/rss/all.xml', breaking: false },
+                { name: 'Times of Israel', url: 'https://www.timesofisrael.com/feed/', breaking: false },
+                { name: 'Arab News', url: 'https://www.arabnews.com/rss.xml', breaking: false },
+                
+                // AFRICA
+                { name: 'Africa News', url: 'https://www.africanews.com/feed/', breaking: false },
+                { name: 'Daily Maverick SA', url: 'https://www.dailymaverick.co.za/dmrss/', breaking: false },
+                { name: 'Nation Kenya', url: 'https://nation.africa/kenya/rss.xml', breaking: false },
+                
+                // SOUTH ASIA
+                { name: 'Times of India', url: 'https://timesofindia.indiatimes.com/rssfeedstopstories.cms', breaking: false },
+                { name: 'Dawn Pakistan', url: 'https://www.dawn.com/feeds/home', breaking: false },
+                
+                // EAST ASIA
+                { name: 'SCMP China', url: 'https://www.scmp.com/rss/91/feed', breaking: false },
+                { name: 'Japan Times', url: 'https://www.japantimes.co.jp/feed/', breaking: false },
+                { name: 'Korea Herald', url: 'http://www.koreaherald.com/rss/020100000000.xml', breaking: false },
+                { name: 'Taiwan News', url: 'https://www.taiwannews.com.tw/en/rss', breaking: false },
+                
+                // SOUTHEAST ASIA
+                { name: 'Straits Times SG', url: 'https://www.straitstimes.com/news/world/rss.xml', breaking: false },
+                { name: 'Bangkok Post', url: 'https://www.bangkokpost.com/rss/data/topstories.xml', breaking: false },
+                { name: 'VN Express', url: 'https://e.vnexpress.net/rss/news.rss', breaking: false },
+                
+                // OCEANIA
+                { name: 'ABC Australia', url: 'https://www.abc.net.au/news/feed/1948/rss.xml', breaking: false },
+                { name: 'NZ Herald', url: 'https://www.nzherald.co.nz/arc/outboundfeeds/rss/section/nz/', breaking: false }
+            ];
+            
+            function timeAgo(dateString) {
+                const now = new Date();
+                const date = new Date(dateString);
+                const seconds = Math.floor((now - date) / 1000);
+                
+                if (seconds < 60) return 'Just now';
+                if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+                if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+                return Math.floor(seconds / 86400) + 'd ago';
+            }
+            
+            function renderNews(articles) {
+                if (articles.length === 0) {
+                    newsList.innerHTML = '<div class="news-loading">No news available</div>';
+                    return;
+                }
+                
+                // Sort by date, newest first
+                articles.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+                
+                // Limit to 30 articles for global coverage
+                const limited = articles.slice(0, 30);
+                
+                newsList.innerHTML = limited.map((article, i) => `
+                    <div class="news-item ${i < 2 && article.breaking ? 'breaking' : ''}" onclick="window.open('${article.link}', '_blank')">
+                        <div class="news-source">${article.source}</div>
+                        <div class="news-title">${article.title}</div>
+                        <div class="news-time">${timeAgo(article.pubDate)}</div>
+                    </div>
+                `).join('');
+            }
+            
+            async function fetchNews() {
+                const allArticles = [];
+                
+                for (const feed of RSS_FEEDS) {
+                    try {
+                        const response = await fetch(
+                            `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`
+                        );
+                        const data = await response.json();
+                        
+                        if (data.status === 'ok' && data.items) {
+                            data.items.forEach(item => {
+                                allArticles.push({
+                                    title: item.title,
+                                    link: item.link,
+                                    pubDate: item.pubDate,
+                                    source: feed.name,
+                                    breaking: feed.breaking
+                                });
+                            });
+                        }
+                    } catch (err) {
+                        console.log(`Failed to fetch ${feed.name}:`, err);
+                    }
+                }
+                
+                renderNews(allArticles);
+            }
+            
+            // Fetch news on load
+            fetchNews();
+            
+            // Refresh news every 5 minutes
+            setInterval(fetchNews, 5 * 60 * 1000);
+            
+            // ==========================================
+            // TOGGLE SWITCHES
+            // ==========================================
+            const toggleRobotController = document.getElementById('toggleRobotController');
+            const toggleNews = document.getElementById('toggleNews');
+            const infoPanel = document.getElementById('infoPanel');
+            const newsPanel = document.getElementById('newsPanel');
+            
+            toggleRobotController.addEventListener('click', () => {
+                toggleRobotController.classList.toggle('active');
+                robotControllerEnabled = toggleRobotController.classList.contains('active');
+                
+                // Toggle UI panels
+                infoPanel.style.display = robotControllerEnabled ? 'block' : 'none';
+                unitInfoBox.style.display = robotControllerEnabled && selectedUnits.length > 0 ? 'block' : 'none';
+                
+                // Toggle all robot entities, selection rings, waypoints, and path lines
+                units.forEach(unitObj => {
+                    unitObj.entity.show = robotControllerEnabled;
+                    unitObj.ring.show = robotControllerEnabled && selectedUnits.includes(unitObj);
+                    if (unitObj.waypoint) {
+                        unitObj.waypoint.show = robotControllerEnabled && selectedUnits.includes(unitObj);
+                    }
+                    if (unitObj.pathLine) {
+                        unitObj.pathLine.show = robotControllerEnabled && selectedUnits.includes(unitObj);
+                    }
+                });
+                
+                // Toggle selection overlay
+                selectOverlay.style.pointerEvents = robotControllerEnabled ? 'auto' : 'none';
+            });
+            
+            toggleNews.addEventListener('click', () => {
+                toggleNews.classList.toggle('active');
+                const isActive = toggleNews.classList.contains('active');
+                newsPanel.style.display = isActive ? 'flex' : 'none';
+            });
+            
+            // ==========================================
+            // PERSONAL HEALTH DASHBOARD (Oura Ring)
+            // ==========================================
+            const toggleHealth = document.getElementById('toggleHealth');
+            const healthPanel = document.getElementById('healthPanel');
+            const healthContent = document.getElementById('healthContent');
+            const sleepTooltip = document.getElementById('sleepTooltip');
+            
+            let healthData = {};
+            let currentMonth = new Date();
+            let healthEnabled = false;
+            
+            toggleHealth.addEventListener('click', () => {
+                toggleHealth.classList.toggle('active');
+                healthEnabled = toggleHealth.classList.contains('active');
+                healthPanel.style.display = healthEnabled ? 'flex' : 'none';
+                
+                if (healthEnabled && Object.keys(healthData).length === 0) {
+                    fetchHealthData();
+                }
+            });
+            
+            function formatDuration(seconds) {
+                if (!seconds) return '—';
+                const hours = Math.floor(seconds / 3600);
+                const mins = Math.floor((seconds % 3600) / 60);
+                return `${hours}h ${mins}m`;
+            }
+            
+            function formatDate(date) {
+                return date.toISOString().split('T')[0];
+            }
+            
+            function getMonthDays(year, month) {
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const daysInMonth = lastDay.getDate();
+                const startingDay = firstDay.getDay();
+                return { daysInMonth, startingDay };
+            }
+            
+            function renderCalendar() {
+                const year = currentMonth.getFullYear();
+                const month = currentMonth.getMonth();
+                const { daysInMonth, startingDay } = getMonthDays(year, month);
+                const today = new Date();
+                
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                                   'July', 'August', 'September', 'October', 'November', 'December'];
+                
+                let html = `
+                    <div class="calendar-container">
+                        <div class="calendar-header">
+                            <button id="prevMonth">◀</button>
+                            <span class="month-year">${monthNames[month]} ${year}</span>
+                            <button id="nextMonth">▶</button>
+                        </div>
+                        <div class="calendar-grid">
+                            <div class="calendar-day-header">Sun</div>
+                            <div class="calendar-day-header">Mon</div>
+                            <div class="calendar-day-header">Tue</div>
+                            <div class="calendar-day-header">Wed</div>
+                            <div class="calendar-day-header">Thu</div>
+                            <div class="calendar-day-header">Fri</div>
+                            <div class="calendar-day-header">Sat</div>
+                `;
+                
+                // Empty cells before first day
+                for (let i = 0; i < startingDay; i++) {
+                    html += `<div class="calendar-day"></div>`;
+                }
+                
+                // Days of month
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+                    const dayData = healthData[dateStr];
+                    
+                    let classes = 'calendar-day current-month';
+                    if (isToday) classes += ' today';
+                    if (dayData) {
+                        classes += ' has-data';
+                        const totalSleep = dayData.total_sleep_duration || 0;
+                        // 6h30m = 23400s, 7h30m = 27000s
+                        if (totalSleep >= 27000) classes += ' sleep-good';        // >= 7h 30m = green
+                        else if (totalSleep >= 23400) classes += ' sleep-ok';     // 6h 30m - 7h 30m = yellow
+                        else if (totalSleep > 0) classes += ' sleep-bad';         // < 6h 30m = red
+                    }
+                    
+                    html += `<div class="${classes}" data-date="${dateStr}">${day}</div>`;
+                }
+                
+                html += `</div></div>`;
+                
+                // Today's summary if available
+                const todayStr = formatDate(today);
+                const todayData = healthData[todayStr];
+                if (todayData) {
+                    html += `
+                        <div class="today-summary">
+                            <h5>Today's Sleep Summary</h5>
+                            <div class="summary-row">
+                                <span class="summary-label">Total Sleep</span>
+                                <span class="summary-value">${formatDuration(todayData.total_sleep_duration)}</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="summary-label">Deep Sleep</span>
+                                <span class="summary-value">${formatDuration(todayData.deep_sleep_duration)}</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="summary-label">REM Sleep</span>
+                                <span class="summary-value">${formatDuration(todayData.rem_sleep_duration)}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                healthContent.innerHTML = html;
+                
+                // Add event listeners
+                document.getElementById('prevMonth')?.addEventListener('click', () => {
+                    currentMonth.setMonth(currentMonth.getMonth() - 1);
+                    renderCalendar();
+                    fetchHealthData();
+                });
+                
+                document.getElementById('nextMonth')?.addEventListener('click', () => {
+                    currentMonth.setMonth(currentMonth.getMonth() + 1);
+                    renderCalendar();
+                    fetchHealthData();
+                });
+                
+                // Add hover listeners for tooltip
+                document.querySelectorAll('.calendar-day.has-data').forEach(dayEl => {
+                    dayEl.addEventListener('mouseenter', (e) => {
+                        const dateStr = dayEl.dataset.date;
+                        const data = healthData[dateStr];
+                        if (!data) return;
+                        
+                        // Determine color based on sleep duration
+                        const totalSleep = data.total_sleep_duration || 0;
+                        let borderColor, textColor;
+                        if (totalSleep >= 27000) {
+                            borderColor = '#00e676'; // green
+                            textColor = '#00e676';
+                        } else if (totalSleep >= 23400) {
+                            borderColor = '#ffd700'; // yellow
+                            textColor = '#ffd700';
+                        } else {
+                            borderColor = '#ff5252'; // red
+                            textColor = '#ff5252';
+                        }
+                        
+                        sleepTooltip.style.borderColor = borderColor;
+                        sleepTooltip.querySelector('.tooltip-date').style.color = textColor;
+                        
+                        sleepTooltip.querySelector('.tooltip-date').textContent = new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+                        document.getElementById('ttTotalSleep').textContent = formatDuration(data.total_sleep_duration);
+                        document.getElementById('ttDeepSleep').textContent = formatDuration(data.deep_sleep_duration);
+                        document.getElementById('ttRemSleep').textContent = formatDuration(data.rem_sleep_duration);
+                        document.getElementById('ttLightSleep').textContent = formatDuration(data.light_sleep_duration);
+                        
+                        sleepTooltip.style.display = 'block';
+                        sleepTooltip.style.left = (e.pageX + 15) + 'px';
+                        sleepTooltip.style.top = (e.pageY + 15) + 'px';
+                    });
+                    
+                    dayEl.addEventListener('mousemove', (e) => {
+                        sleepTooltip.style.left = (e.pageX + 15) + 'px';
+                        sleepTooltip.style.top = (e.pageY + 15) + 'px';
+                    });
+                    
+                    dayEl.addEventListener('mouseleave', () => {
+                        sleepTooltip.style.display = 'none';
+                    });
+                });
+            }
+            
+            async function fetchHealthData() {
+                const year = currentMonth.getFullYear();
+                const month = currentMonth.getMonth();
+                const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+                const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}`;
+                
+                healthContent.innerHTML = '<div class="health-loading">Loading health data...</div>';
+                
+                // Detect if we're running through the proxy server or directly
+                const isLocalServer = window.location.protocol === 'http:' && window.location.hostname === 'localhost';
+                const baseUrl = isLocalServer ? '/api/oura' : 'https://api.ouraring.com';
+                const headers = isLocalServer 
+                    ? { 'Accept': 'application/json' }
+                    : { 'Authorization': `Bearer ${OURA_TOKEN}`, 'Accept': 'application/json' };
+                
+                try {
+                    // Fetch sleep data from Oura API
+                    const response = await fetch(
+                        `${baseUrl}/v2/usercollection/daily_sleep?start_date=${startDate}&end_date=${endDate}`,
+                        { headers }
+                    );
+                    
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Process sleep data
+                    if (data.data) {
+                        data.data.forEach(sleep => {
+                            const date = sleep.day;
+                            healthData[date] = {
+                                total_sleep_duration: 0,
+                                deep_sleep_duration: 0,
+                                rem_sleep_duration: 0,
+                                light_sleep_duration: 0,
+                                hr_before_sleep: null,
+                                bedtime_start: null,
+                                score: sleep.score
+                            };
+                        });
+                    }
+                    
+                    // Also fetch detailed sleep data for durations
+                    const sleepResponse = await fetch(
+                        `${baseUrl}/v2/usercollection/sleep?start_date=${startDate}&end_date=${endDate}`,
+                        { headers }
+                    );
+                    
+                    if (sleepResponse.ok) {
+                        const sleepData = await sleepResponse.json();
+                        if (sleepData.data) {
+                            sleepData.data.forEach(sleep => {
+                                const date = sleep.day;
+                                if (!healthData[date]) {
+                                    healthData[date] = {};
+                                }
+                                healthData[date].total_sleep_duration = sleep.total_sleep_duration || 0;
+                                healthData[date].deep_sleep_duration = sleep.deep_sleep_duration || 0;
+                                healthData[date].rem_sleep_duration = sleep.rem_sleep_duration || 0;
+                                healthData[date].light_sleep_duration = sleep.light_sleep_duration || 0;
+                                healthData[date].bedtime_start = sleep.bedtime_start || null;
+                                healthData[date].average_heart_rate = sleep.average_heart_rate || null;
+                            });
+                        }
+                    }
+                    
+                    renderCalendar();
+                    
+                } catch (error) {
+                    console.error('Failed to fetch health data:', error);
+                    healthContent.innerHTML = `
+                        <div class="health-error">
+                            Failed to load health data.<br>
+                            <small>${error.message}</small><br><br>
+                            <small>Run: <code>node server.js</code><br>Then open <code>http://localhost:3000</code></small>
+                        </div>
+                    `;
+                }
+            }
+            
+            // ==========================================
+            // DRAGGABLE PANELS
+            // ==========================================
+            function makeDraggable(element, handle = null) {
+                const dragHandle = handle || element;
+                let isDragging = false;
+                let startX, startY, startLeft, startTop;
+                
+                dragHandle.style.cursor = 'move';
+                
+                dragHandle.addEventListener('mousedown', (e) => {
+                    // Don't drag if clicking on interactive elements
+                    if (e.target.tagName === 'BUTTON' || e.target.classList.contains('toggle-switch')) return;
+                    
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    
+                    const rect = element.getBoundingClientRect();
+                    startLeft = rect.left;
+                    startTop = rect.top;
+                    
+                    // Remove any bottom/right positioning and transform, switch to top/left
+                    element.style.bottom = 'auto';
+                    element.style.right = 'auto';
+                    element.style.transform = 'none';
+                    element.style.left = startLeft + 'px';
+                    element.style.top = startTop + 'px';
+                    
+                    e.preventDefault();
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (!isDragging) return;
+                    
+                    const deltaX = e.clientX - startX;
+                    const deltaY = e.clientY - startY;
+                    
+                    element.style.left = (startLeft + deltaX) + 'px';
+                    element.style.top = (startTop + deltaY) + 'px';
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                });
+            }
+            
+            // Make all panels draggable
+            makeDraggable(document.getElementById('infoPanel'));
+            makeDraggable(document.getElementById('togglePanel'));
+            makeDraggable(document.getElementById('unitInfoBox'));
+            makeDraggable(document.getElementById('newsPanel'), document.querySelector('#newsPanel h4'));
+            makeDraggable(document.getElementById('healthPanel'), document.querySelector('#healthPanel h4'));
             
         } catch (error) {
             console.error('Error:', error);
