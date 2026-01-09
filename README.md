@@ -1,3 +1,3 @@
 # miraeswarm
 
-Turn everything into a rts game
+Turn everything into an rts game
