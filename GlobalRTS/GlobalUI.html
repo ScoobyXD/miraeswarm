@@ -191,7 +191,9 @@
             timeline: false,
             navigationHelpButton: false,
             fullscreenButton: true,
-            homeButton: false
+            homeButton: false,
+            infoBox: false,
+            selectionIndicator: false
         });
 
         const controller = viewer.scene.screenSpaceCameraController;
@@ -256,10 +258,8 @@
                 show: false
             });
 
-            const units = [{ entity: robot, ring: selectionRing }];
+            const units = [{ entity: robot, ring: selectionRing, waypoint: null, pathLine: null }];
             let selectedUnits = [];
-            let waypoint = null;
-            let pathLine = null;
 
             // Helpers
             function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -282,6 +282,10 @@
                 if (!selectedUnits.includes(unitObj)) selectedUnits.push(unitObj);
                 unitObj.ring.show = true;
                 
+                // Show waypoint and path if they exist
+                if (unitObj.waypoint) unitObj.waypoint.show = true;
+                if (unitObj.pathLine) unitObj.pathLine.show = true;
+                
                 const props = unitObj.entity.properties;
                 const pos = unitObj.entity.position.getValue(viewer.clock.currentTime);
                 const carto = Cesium.Cartographic.fromCartesian(pos);
@@ -299,7 +303,12 @@
             }
             
             function deselectAll() {
-                selectedUnits.forEach(u => u.ring.show = false);
+                selectedUnits.forEach(u => {
+                    u.ring.show = false;
+                    // Hide waypoint and path but don't delete them
+                    if (u.waypoint) u.waypoint.show = false;
+                    if (u.pathLine) u.pathLine.show = false;
+                });
                 selectedUnits = [];
                 unitInfoBox.style.display = 'none';
                 document.getElementById('selectedUnits').textContent = 'None';
@@ -307,8 +316,14 @@
 
             const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
             
-            // Right-click: set waypoint
+            // Right-click: set waypoint (only if a unit is selected)
             handler.setInputAction(function(click) {
+                // Only allow waypoint if we have a selected unit
+                if (selectedUnits.length === 0) {
+                    console.log('No unit selected - cannot set waypoint');
+                    return;
+                }
+                
                 const cartesian = viewer.scene.pickPosition(click.position);
                 if (!Cesium.defined(cartesian)) return;
                 
@@ -326,21 +341,32 @@
                 document.getElementById('distanceValue').textContent = dist < 1000 ? `${dist.toFixed(1)} m` : `${(dist/1000).toFixed(2)} km`;
                 document.getElementById('bearingValue').textContent = `Bearing: ${bear.toFixed(1)}°`;
                 
-                if (waypoint) viewer.entities.remove(waypoint);
-                if (pathLine) viewer.entities.remove(pathLine);
-                
-                waypoint = viewer.entities.add({
-                    position: Cesium.Cartesian3.fromDegrees(lon, lat, alt + 2),
-                    point: { pixelSize: 14, color: Cesium.Color.RED, outlineColor: Cesium.Color.WHITE, outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
-                    label: { text: 'Target', font: '12px sans-serif', style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -18), disableDepthTestDistance: Number.POSITIVE_INFINITY }
-                });
-                
-                pathLine = viewer.entities.add({
-                    polyline: {
-                        positions: [Cesium.Cartesian3.fromDegrees(ROBOT_START.lon, ROBOT_START.lat, 2), Cesium.Cartesian3.fromDegrees(lon, lat, alt + 2)],
-                        width: 4,
-                        material: new Cesium.PolylineDashMaterialProperty({ color: Cesium.Color.YELLOW, dashLength: 16 })
-                    }
+                // Set waypoint for each selected unit
+                selectedUnits.forEach(unitObj => {
+                    // Remove old waypoint and path if they exist
+                    if (unitObj.waypoint) viewer.entities.remove(unitObj.waypoint);
+                    if (unitObj.pathLine) viewer.entities.remove(unitObj.pathLine);
+                    
+                    // Get unit's current position for the path line
+                    const unitPos = unitObj.entity.position.getValue(viewer.clock.currentTime);
+                    const unitCarto = Cesium.Cartographic.fromCartesian(unitPos);
+                    const unitLon = Cesium.Math.toDegrees(unitCarto.longitude);
+                    const unitLat = Cesium.Math.toDegrees(unitCarto.latitude);
+                    const unitAlt = unitCarto.height;
+                    
+                    unitObj.waypoint = viewer.entities.add({
+                        position: Cesium.Cartesian3.fromDegrees(lon, lat, alt + 2),
+                        point: { pixelSize: 14, color: Cesium.Color.RED, outlineColor: Cesium.Color.WHITE, outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+                        label: { text: 'Target', font: '12px sans-serif', style: Cesium.LabelStyle.FILL_AND_OUTLINE, outlineWidth: 2, verticalOrigin: Cesium.VerticalOrigin.BOTTOM, pixelOffset: new Cesium.Cartesian2(0, -18), disableDepthTestDistance: Number.POSITIVE_INFINITY }
+                    });
+                    
+                    unitObj.pathLine = viewer.entities.add({
+                        polyline: {
+                            positions: [Cesium.Cartesian3.fromDegrees(unitLon, unitLat, unitAlt + 2), Cesium.Cartesian3.fromDegrees(lon, lat, alt + 2)],
+                            width: 4,
+                            material: new Cesium.PolylineDashMaterialProperty({ color: Cesium.Color.YELLOW, dashLength: 16 })
+                        }
+                    });
                 });
                 
                 console.log('Navigate to:', { lat, lon, alt, distance: dist, bearing: bear });
