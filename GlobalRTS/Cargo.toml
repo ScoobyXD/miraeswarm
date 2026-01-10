@@ -1,0 +1,48 @@
+[package]
+name = "globalrts"
+version = "1.0.0"
+edition = "2021"
+authors = ["Jonathan Kim"]
+description = "Antifragile command center for robot fleets. Observable, reprogrammable, 1000-year-proof."
+
+# Single binary output
+[[bin]]
+name = "globalrts"
+path = "src/main.rs"
+
+# Simulator binary
+[[bin]]
+name = "simulator"
+path = "src/simulator.rs"
+
+[dependencies]
+# SQLite - compiles INTO our binary. No external database server.
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# JSON serialization - pure Rust, no external deps
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# SHA-1 for WebSocket handshake - pure Rust
+sha1 = "0.10"
+
+# Base64 for WebSocket handshake - pure Rust  
+base64 = "0.21"
+
+[profile.release]
+opt-level = 3      # Maximum optimization
+lto = true         # Link-time optimization - smaller binary
+strip = true       # Strip symbols - smaller binary
+panic = "abort"    # No unwinding - smaller binary
+
+# DEPENDENCY PHILOSOPHY:
+# 
+# Every dependency here compiles INTO the binary.
+# At runtime, there are ZERO external dependencies.
+# 
+# rusqlite: Bundles SQLite C code. Database engine IS our binary.
+# serde/serde_json: Pure Rust. Compiles to machine code.
+# sha1/base64: Pure Rust. Used for WebSocket handshake.
+#
+# After `cargo build --release`, the output is ONE FILE.
+# Copy it anywhere. Run it. No runtime needed.
