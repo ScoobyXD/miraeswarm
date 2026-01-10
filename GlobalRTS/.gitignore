@@ -1,15 +1,30 @@
-# API Keys and sensitive config
+# Dependencies
+node_modules/
+
+# Environment and config files with secrets
+.env
 CONFIG.js
+
+# Database
+*.db
+*.sqlite
+
+# Logs
+logs/
+*.log
+npm-debug.log*
 
 # OS files
 .DS_Store
 Thumbs.db
 
 # IDE
-.idea/
 .vscode/
-*.swp
-*.swo
+.idea/
 
-# Logs
-*.log
+# Docker volumes (if running locally)
+postgres_data/
+
+# Build artifacts
+dist/
+build/
