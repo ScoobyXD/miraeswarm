@@ -106,6 +106,7 @@ impl TelemetryWriter {
     }
     
     /// Flush all writers.
+    #[allow(dead_code)]
     pub fn flush(&self) -> Result<(), String> {
         let mut writers = self.writers.lock().map_err(|e| e.to_string())?;
         for w in writers.values_mut() {
@@ -115,6 +116,7 @@ impl TelemetryWriter {
     }
     
     /// Clone for thread sharing.
+    #[allow(dead_code)]
     pub fn clone(&self) -> Self {
         Self {
             base_path: self.base_path.clone(),

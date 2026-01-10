@@ -83,7 +83,7 @@ pub fn handle_request(stream: &mut TcpStream, request: &str, public_dir: &str) -
     // Read and serve file
     match fs::read(&file_path) {
         Ok(content) => {
-            let mime = mime_type(path);
+            let mime = mime_type(&path);
             let response = format!(
                 "HTTP/1.1 200 OK\r\n\
                  Content-Type: {}\r\n\

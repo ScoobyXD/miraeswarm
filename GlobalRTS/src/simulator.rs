@@ -13,7 +13,6 @@ use std::net::TcpStream;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::thread;
 
-use sha1::{Sha1, Digest};
 use base64::Engine;
 use serde::{Serialize, Deserialize};
 
@@ -324,7 +323,7 @@ fn main() {
     }
 }
 
-fn handle_command(ws: &mut WsClient, state: &mut DeviceState, device_id: &str, data: &serde_json::Value) {
+fn handle_command(ws: &mut WsClient, state: &mut DeviceState, _device_id: &str, data: &serde_json::Value) {
     let cmd_type = data.get("type").and_then(|v| v.as_str()).unwrap_or("");
     let cmd_id = data.get("commandId").and_then(|v| v.as_str()).unwrap_or("");
     let payload = data.get("payload").cloned().unwrap_or_default();

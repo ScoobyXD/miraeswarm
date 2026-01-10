@@ -190,6 +190,7 @@ impl StateDb {
     }
     
     /// Clone for thread sharing.
+    #[allow(dead_code)]
     pub fn clone(&self) -> Self {
         Self {
             conn: Arc::clone(&self.conn),

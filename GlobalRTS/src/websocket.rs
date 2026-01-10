@@ -43,6 +43,7 @@ pub struct WebSocket {
     pub state: State,
 }
 
+#[allow(dead_code)]
 impl WebSocket {
     /// Perform server-side WebSocket handshake.
     /// Takes a TCP stream that has received an HTTP upgrade request.

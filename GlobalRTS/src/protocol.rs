@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegisterMessage {
     pub device_id: String,
-    pub device_type: String,  // "robot", "phone", "drone", "iot"
+    pub device_type: String,
     pub name: String,
     pub latitude: f64,
     pub longitude: f64,
@@ -40,35 +40,9 @@ pub struct TelemetryMessage {
     pub sensors: serde_json::Value,
 }
 
-/// Command acknowledgment. Device confirms receipt.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CommandAck {
-    pub command_id: String,
-    pub status: String,  // "received", "executing", "completed", "failed"
-    #[serde(default)]
-    pub result: serde_json::Value,
-}
-
-// ============================================================================
-// SERVER → DEVICE MESSAGES
-// ============================================================================
-
-/// Command to execute. Sent from GlobalUI via server.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Command {
-    pub command_id: String,
-    pub command_type: String,  // "navigate", "stop", "ring", "photo", etc.
-    #[serde(default)]
-    pub payload: serde_json::Value,
-}
-
 // ============================================================================
 // GLOBALUI → SERVER MESSAGES
 // ============================================================================
-
-/// Request device list.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GetDevices {}
 
 /// Send command to a device.
 #[derive(Debug, Clone, Serialize, Deserialize)]
