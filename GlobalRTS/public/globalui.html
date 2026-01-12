@@ -549,6 +549,209 @@
         
         .summary-label { color: #888; }
         .summary-value { color: #fff; font-family: monospace; }
+        
+        /* Device Pairing Panel */
+        #pairingPanel {
+            position: absolute;
+            bottom: 180px;
+            left: 10px;
+            width: 300px;
+            max-height: 300px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+            z-index: 1000;
+            font-size: 13px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            display: none;
+            flex-direction: column;
+        }
+        
+        #pairingPanel h4 {
+            margin: 0;
+            padding: 12px 15px;
+            color: #4CAF50;
+            font-size: 14px;
+            background: rgba(76, 175, 80, 0.15);
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        #pairingContent {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            max-height: 230px;
+        }
+        
+        .pairing-empty, .devices-empty {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+            font-style: italic;
+        }
+        
+        .pairing-request {
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        .pairing-request:last-child {
+            margin-bottom: 0;
+        }
+        
+        .pairing-request .device-name {
+            font-weight: bold;
+            color: #4CAF50;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .pairing-request .device-type {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        
+        .pairing-request .code-display {
+            font-family: monospace;
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+            text-align: center;
+            letter-spacing: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        
+        .pairing-request .expires {
+            font-size: 11px;
+            color: #FF9800;
+            text-align: center;
+        }
+        
+        .pairing-request .dismiss-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .pairing-request .dismiss-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #f44336;
+        }
+        
+        /* Device Manager Panel */
+        #devicesPanel {
+            position: absolute;
+            bottom: 180px;
+            left: 320px;
+            width: 280px;
+            max-height: 350px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+            z-index: 1000;
+            font-size: 13px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            display: none;
+            flex-direction: column;
+        }
+        
+        #devicesPanel h4 {
+            margin: 0;
+            padding: 12px 15px;
+            color: #2196F3;
+            font-size: 14px;
+            background: rgba(33, 150, 243, 0.15);
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        #devicesContent {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            max-height: 280px;
+        }
+        
+        .device-item {
+            background: rgba(33, 150, 243, 0.1);
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .device-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .device-item .device-info {
+            flex: 1;
+        }
+        
+        .device-item .device-name {
+            font-weight: bold;
+            color: #fff;
+            font-size: 13px;
+        }
+        
+        .device-item .device-meta {
+            font-size: 11px;
+            color: #888;
+            margin-top: 2px;
+        }
+        
+        .device-item .device-status {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .device-item .device-status.online { background: #4CAF50; }
+        .device-item .device-status.offline { background: #666; }
+        
+        .device-item .revoke-btn {
+            background: none;
+            border: 1px solid #f44336;
+            color: #f44336;
+            cursor: pointer;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            opacity: 0.7;
+        }
+        
+        .device-item .revoke-btn:hover {
+            background: #f44336;
+            color: #fff;
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -587,12 +790,36 @@
             <div class="toggle-switch active" id="toggleRobotController"></div>
         </div>
         <div class="toggle-row">
+            <span class="toggle-label">Device Pairing</span>
+            <div class="toggle-switch" id="togglePairing"></div>
+        </div>
+        <div class="toggle-row">
+            <span class="toggle-label">Device Manager</span>
+            <div class="toggle-switch" id="toggleDevices"></div>
+        </div>
+        <div class="toggle-row">
             <span class="toggle-label">Personal Health</span>
             <div class="toggle-switch" id="toggleHealth"></div>
         </div>
         <div class="toggle-row">
             <span class="toggle-label">Global News</span>
             <div class="toggle-switch active" id="toggleNews"></div>
+        </div>
+    </div>
+    
+    <!-- Device Pairing Panel -->
+    <div id="pairingPanel">
+        <h4><span class="pairing-icon">🔗</span> DEVICE PAIRING</h4>
+        <div id="pairingContent">
+            <div class="pairing-empty">No pending pairing requests</div>
+        </div>
+    </div>
+    
+    <!-- Device Manager Panel -->
+    <div id="devicesPanel">
+        <h4><span class="devices-icon">📱</span> PAIRED DEVICES</h4>
+        <div id="devicesContent">
+            <div class="devices-empty">No paired devices</div>
         </div>
     </div>
     
@@ -1529,7 +1756,7 @@
                         <div class="health-error">
                             Failed to load health data.<br>
                             <small>${error.message}</small><br><br>
-                            <small>Run: <code>node server.js</code><br>Then open <code>http://localhost:3000</code></small>
+                            <small>Run: <code>./target/release/globalrts</code><br>Then open <code>http://localhost:3000</code></small>
                         </div>
                     `;
                 }
@@ -1596,7 +1823,10 @@
             // No libraries. Built into every browser since 2011.
             // ==========================================
             
-            const WS_URL = `ws://${window.location.host}`;
+            // WebSocket URL - configurable via CONFIG.SERVER_URL or auto-detect
+            const WS_URL = (typeof CONFIG !== 'undefined' && CONFIG.SERVER_URL) 
+                ? CONFIG.SERVER_URL 
+                : `ws://${window.location.host}`;
             let socket = null;
             let serverConnected = false;
             const deviceEntities = new Map();
@@ -1606,30 +1836,45 @@
             const MAX_RECONNECT_ATTEMPTS = 100;
             const RECONNECT_DELAY = 2000;
             
-            // Connection status indicator
+            // Connection status indicator (clickable to show connection info)
             const statusIndicator = document.createElement('div');
             statusIndicator.id = 'serverStatus';
-            statusIndicator.innerHTML = '⚫ Server: Connecting...';
+            statusIndicator.innerHTML = '🟡 Server: Connecting...';
             statusIndicator.style.cssText = `
                 position: absolute;
                 top: 10px;
                 right: 300px;
-                background: rgba(0,0,0,0.8);
+                background: rgba(0,0,0,0.9);
                 color: #ffd700;
                 padding: 8px 12px;
                 border-radius: 4px;
                 font-family: sans-serif;
                 font-size: 12px;
                 z-index: 1001;
+                cursor: pointer;
             `;
+            statusIndicator.title = `Connecting to: ${WS_URL}\nClick to retry`;
+            statusIndicator.addEventListener('click', () => {
+                if (!serverConnected) {
+                    reconnectAttempts = 0;
+                    statusIndicator.innerHTML = '🟡 Server: Reconnecting...';
+                    statusIndicator.style.color = '#ffd700';
+                    connectToServer();
+                }
+            });
             document.body.appendChild(statusIndicator);
             
             function updateServerStatus(connected, message) {
                 serverConnected = connected;
-                statusIndicator.innerHTML = connected 
-                    ? `🟢 Server: Connected` 
-                    : `🔴 Server: ${message || 'Disconnected'}`;
-                statusIndicator.style.color = connected ? '#00ff00' : '#ff4444';
+                if (connected) {
+                    statusIndicator.innerHTML = `🟢 Server: Connected`;
+                    statusIndicator.style.color = '#00ff00';
+                    statusIndicator.title = `Connected to: ${WS_URL}`;
+                } else {
+                    statusIndicator.innerHTML = `🔴 Server: ${message || 'Disconnected'}`;
+                    statusIndicator.style.color = '#ff4444';
+                    statusIndicator.title = `Failed to connect to: ${WS_URL}\nClick to retry`;
+                }
             }
             
             // Create or update device entity on the map
@@ -1780,10 +2025,12 @@
                         case 'devices:list':
                             console.log(`📥 ${msg.data.length} devices`);
                             msg.data.forEach(updateDeviceOnMap);
+                            updateDevicesPanel(msg.data);
                             break;
                         case 'device:online':
                             console.log(`📥 Online: ${msg.data.name}`);
                             updateDeviceOnMap(msg.data);
+                            refreshDevicesPanel();
                             break;
                         case 'device:update':
                             updateDeviceOnMap(msg.data);
@@ -1795,6 +2042,16 @@
                                 d.entity.point.color = Cesium.Color.GRAY;
                                 d.entity.properties.status = 'offline';
                             }
+                            refreshDevicesPanel();
+                            break;
+                        case 'device:revoked':
+                            console.log(`📥 Revoked: ${msg.data.device_id}`);
+                            removeDeviceFromMap(msg.data.device_id);
+                            refreshDevicesPanel();
+                            break;
+                        case 'pairing:requests':
+                            console.log(`📥 ${msg.data.requests.length} pairing requests`);
+                            updatePairingPanel(msg.data.requests);
                             break;
                         case 'command:sent':
                             console.log(`📥 Command ${msg.data.status}`);
@@ -1826,6 +2083,136 @@
             if (typeof createWaypointForUnit === 'function') {
                 window.createWaypointForUnitWithServer = createWaypointForUnitWithServer;
             }
+            
+            // ==========================================
+            // DEVICE PAIRING PANEL
+            // ==========================================
+            const togglePairing = document.getElementById('togglePairing');
+            const pairingPanel = document.getElementById('pairingPanel');
+            const pairingContent = document.getElementById('pairingContent');
+            let pairingEnabled = false;
+            let pairingRequests = [];
+            
+            togglePairing.addEventListener('click', () => {
+                togglePairing.classList.toggle('active');
+                pairingEnabled = togglePairing.classList.contains('active');
+                pairingPanel.style.display = pairingEnabled ? 'flex' : 'none';
+            });
+            
+            function updatePairingPanel(requests) {
+                pairingRequests = requests;
+                if (requests.length === 0) {
+                    pairingContent.innerHTML = '<div class="pairing-empty">No pending pairing requests</div>';
+                    return;
+                }
+                
+                const now = Math.floor(Date.now() / 1000);
+                pairingContent.innerHTML = requests.map(r => {
+                    const remaining = Math.max(0, r.expires_at - now);
+                    const mins = Math.floor(remaining / 60);
+                    const secs = remaining % 60;
+                    return `
+                        <div class="pairing-request" data-device-id="${r.device_id}">
+                            <button class="dismiss-btn" onclick="dismissPairing('${r.device_id}')">&times;</button>
+                            <div class="device-name">${r.name}</div>
+                            <div class="device-type">${r.device_type} • ${r.device_id}</div>
+                            <div class="code-display">${r.code}</div>
+                            <div class="expires">Expires in ${mins}:${secs.toString().padStart(2, '0')}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            window.dismissPairing = function(deviceId) {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        type: 'dismissPairing',
+                        data: { device_id: deviceId }
+                    }));
+                }
+                // Remove from local list immediately
+                pairingRequests = pairingRequests.filter(r => r.device_id !== deviceId);
+                updatePairingPanel(pairingRequests);
+            };
+            
+            // Update countdown timers every second
+            setInterval(() => {
+                if (pairingRequests.length > 0) {
+                    updatePairingPanel(pairingRequests);
+                }
+            }, 1000);
+            
+            // ==========================================
+            // DEVICE MANAGER PANEL
+            // ==========================================
+            const toggleDevices = document.getElementById('toggleDevices');
+            const devicesPanel = document.getElementById('devicesPanel');
+            const devicesContent = document.getElementById('devicesContent');
+            let devicesEnabled = false;
+            let pairedDevices = [];
+            
+            toggleDevices.addEventListener('click', () => {
+                toggleDevices.classList.toggle('active');
+                devicesEnabled = toggleDevices.classList.contains('active');
+                devicesPanel.style.display = devicesEnabled ? 'flex' : 'none';
+                if (devicesEnabled) {
+                    refreshDevicesPanel();
+                }
+            });
+            
+            function updateDevicesPanel(devices) {
+                pairedDevices = devices;
+                if (!devices || devices.length === 0) {
+                    devicesContent.innerHTML = '<div class="devices-empty">No paired devices</div>';
+                    return;
+                }
+                
+                devicesContent.innerHTML = devices.map(d => {
+                    const statusClass = d.status === 'online' ? 'online' : 'offline';
+                    const lastSeen = d.last_seen ? new Date(d.last_seen * 1000).toLocaleString() : 'Never';
+                    return `
+                        <div class="device-item" data-device-id="${d.id}">
+                            <div class="device-info">
+                                <div class="device-name">
+                                    <span class="device-status ${statusClass}"></span>
+                                    ${d.name}
+                                </div>
+                                <div class="device-meta">${d.device_type} • ${d.id}</div>
+                                <div class="device-meta">Last: ${lastSeen}</div>
+                            </div>
+                            <button class="revoke-btn" onclick="revokeDevice('${d.id}')">Revoke</button>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            function refreshDevicesPanel() {
+                // Re-render with current deviceEntities data
+                const devices = [];
+                deviceEntities.forEach((data, id) => {
+                    const props = data.entity.properties;
+                    devices.push({
+                        id: id,
+                        name: data.entity.name,
+                        device_type: props.type?.getValue?.() || props.type || 'unknown',
+                        status: props.status?.getValue?.() || props.status || 'offline',
+                        last_seen: data.data?.last_seen || 0
+                    });
+                });
+                updateDevicesPanel(devices);
+            }
+            
+            window.revokeDevice = function(deviceId) {
+                if (!confirm(`Revoke device "${deviceId}"? It will need to re-pair to reconnect.`)) {
+                    return;
+                }
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        type: 'revokeDevice',
+                        data: { device_id: deviceId }
+                    }));
+                }
+            };
             
             // Connect to server on load
             connectToServer();

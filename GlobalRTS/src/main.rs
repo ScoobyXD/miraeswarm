@@ -15,13 +15,21 @@
 //!                    │  Server   │
 //!                    │           │
 //!                    │ ┌───────┐ │
-//!                    │ │ State │ │ ← SQLite (device registry)
+//!                    │ │ State │ │ ← SQLite (device registry, pairing)
 //!                    │ └───────┘ │
 //!                    │ ┌───────┐ │
 //!                    │ │ Telem │ │ ← Files (time-series data)
 //!                    │ └───────┘ │
 //!                    └───────────┘
 //! ```
+//!
+//! ## Device Connection Flow
+//! 
+//! 1. Device POSTs to /api/pair/request → Gets "pending" status
+//! 2. Server generates 6-digit code, broadcasts to GlobalUI
+//! 3. User tells device operator the code
+//! 4. Device POSTs to /api/pair/confirm with code → Gets auth token
+//! 5. Device connects via WebSocket with token → Fully connected
 
 mod protocol;
 mod websocket;
@@ -33,7 +41,7 @@ use std::collections::HashMap;
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use protocol::{Envelope, DeviceInfo, TelemetryMessage, RegisterMessage, SendCommand};
 use websocket::{WebSocket, State as WsState};
@@ -44,18 +52,16 @@ use telemetry::{TelemetryWriter, TelemetryRecord};
 // CONFIGURATION
 // ============================================================================
 
-/// Server configuration. Edit these constants directly.
-/// No config files. No environment variables. Just change the code.
 const PORT: u16 = 3000;
 const PUBLIC_DIR: &str = "public";
 const DATA_DIR: &str = "data";
 const DB_FILE: &str = "data/state.db";
+const PAIRING_BROADCAST_INTERVAL_MS: u64 = 1000;
 
 // ============================================================================
 // SERVER STATE
 // ============================================================================
 
-/// Connected client info.
 struct Client {
     ws: WebSocket,
     client_type: ClientType,
@@ -69,7 +75,6 @@ enum ClientType {
     Ui,
 }
 
-/// Shared server state.
 struct Server {
     clients: HashMap<usize, Client>,
     next_id: usize,
@@ -79,7 +84,6 @@ struct Server {
 
 impl Server {
     fn new() -> Result<Self, String> {
-        // Ensure data directory exists
         std::fs::create_dir_all(DATA_DIR).map_err(|e| e.to_string())?;
         std::fs::create_dir_all(format!("{}/telemetry", DATA_DIR)).map_err(|e| e.to_string())?;
         
@@ -132,6 +136,27 @@ impl Server {
         }
         false
     }
+    
+    /// Broadcast pending pairing requests to all UIs
+    fn broadcast_pairing_requests(&mut self) {
+        if let Ok(requests) = self.db.get_pending_pairing_requests() {
+            if !requests.is_empty() {
+                let json: Vec<serde_json::Value> = requests.iter().map(|r| {
+                    serde_json::json!({
+                        "device_id": r.device_id,
+                        "name": r.name,
+                        "device_type": r.device_type,
+                        "code": r.code,
+                        "expires_at": r.expires_at
+                    })
+                }).collect();
+                
+                self.broadcast_to_uis(&Envelope::new("pairing:requests", &serde_json::json!({
+                    "requests": json
+                })));
+            }
+        }
+    }
 }
 
 // ============================================================================
@@ -139,62 +164,97 @@ impl Server {
 // ============================================================================
 
 fn handle_message(server: &mut Server, client_id: usize, msg: &str) {
-    // Parse envelope
     let envelope: Envelope = match serde_json::from_str(msg) {
         Ok(e) => e,
         Err(_) => return,
     };
     
     match envelope.msg_type.as_str() {
-        // Device registration
+        // Device registration (with token auth)
         "register" => {
             if let Ok(reg) = serde_json::from_value::<RegisterMessage>(envelope.data) {
-                let now = now_unix();
+                // Validate token
+                let token = reg.token.as_deref().unwrap_or("");
                 
-                let device = DeviceInfo {
-                    id: reg.device_id.clone(),
-                    name: reg.name.clone(),
-                    device_type: reg.device_type.clone(),
-                    status: "online".to_string(),
-                    latitude: reg.latitude,
-                    longitude: reg.longitude,
-                    altitude: reg.altitude,
-                    heading: 0.0,
-                    speed: 0.0,
-                    battery: 100.0,
-                    last_seen: now,
-                };
-                
-                // Save to database
-                let _ = server.db.upsert_device(&device);
-                
-                // Update client info
-                if let Some(client) = server.clients.get_mut(&client_id) {
-                    client.client_type = ClientType::Device;
-                    client.device_id = Some(reg.device_id.clone());
-                    
-                    // Confirm registration
-                    let _ = client.ws.send(&Envelope::new("registered", &serde_json::json!({
-                        "device": device
-                    })).to_json());
+                if !token.is_empty() {
+                    // Check if token is valid
+                    match server.db.validate_token(token) {
+                        Ok(Some(stored_device_id)) => {
+                            // Token valid - use the device_id from token if different
+                            let device_id = if reg.device_id.is_empty() { 
+                                stored_device_id.clone() 
+                            } else { 
+                                reg.device_id.clone() 
+                            };
+                            
+                            let now = now_unix();
+                            let device = DeviceInfo {
+                                id: device_id.clone(),
+                                name: reg.name.clone(),
+                                device_type: reg.device_type.clone(),
+                                status: "online".to_string(),
+                                latitude: reg.latitude,
+                                longitude: reg.longitude,
+                                altitude: reg.altitude,
+                                heading: 0.0,
+                                speed: 0.0,
+                                battery: 100.0,
+                                last_seen: now,
+                            };
+                            
+                            let _ = server.db.upsert_device(&device);
+                            
+                            if let Some(client) = server.clients.get_mut(&client_id) {
+                                client.client_type = ClientType::Device;
+                                client.device_id = Some(device_id.clone());
+                                let _ = client.ws.send(&Envelope::new("registered", &serde_json::json!({
+                                    "status": "ok",
+                                    "device": device
+                                })).to_json());
+                            }
+                            
+                            server.broadcast_to_uis(&Envelope::new("device:online", &device));
+                            println!("✓ Device registered: {} ({})", reg.name, reg.device_type);
+                        }
+                        Ok(None) => {
+                            // Invalid token
+                            if let Some(client) = server.clients.get_mut(&client_id) {
+                                let _ = client.ws.send(&Envelope::new("error", &serde_json::json!({
+                                    "code": "invalid_token",
+                                    "message": "Invalid or expired token. Please re-pair the device."
+                                })).to_json());
+                            }
+                            println!("✗ Invalid token from device: {}", reg.device_id);
+                        }
+                        Err(e) => {
+                            if let Some(client) = server.clients.get_mut(&client_id) {
+                                let _ = client.ws.send(&Envelope::new("error", &serde_json::json!({
+                                    "code": "db_error",
+                                    "message": e
+                                })).to_json());
+                            }
+                        }
+                    }
+                } else {
+                    // No token provided - reject
+                    if let Some(client) = server.clients.get_mut(&client_id) {
+                        let _ = client.ws.send(&Envelope::new("error", &serde_json::json!({
+                            "code": "no_token",
+                            "message": "Authentication required. Use /api/pair/request to get a token."
+                        })).to_json());
+                    }
+                    println!("✗ Device tried to register without token: {}", reg.device_id);
                 }
-                
-                // Notify UIs
-                server.broadcast_to_uis(&Envelope::new("device:online", &device));
-                
-                println!("✓ Device registered: {} ({})", reg.name, reg.device_type);
             }
         }
         
         // Device telemetry
         "telemetry" => {
             if let Ok(telem) = serde_json::from_value::<TelemetryMessage>(envelope.data.clone()) {
-                // Get device ID for this client
                 let device_id = server.clients.get(&client_id)
                     .and_then(|c| c.device_id.clone());
                 
                 if let Some(device_id) = device_id {
-                    // Update state DB
                     let _ = server.db.update_telemetry(
                         &device_id,
                         telem.latitude,
@@ -205,7 +265,6 @@ fn handle_message(server: &mut Server, client_id: usize, msg: &str) {
                         telem.battery,
                     );
                     
-                    // Write to telemetry files
                     let record = TelemetryRecord {
                         timestamp: now_unix(),
                         device_id: device_id.clone(),
@@ -219,7 +278,6 @@ fn handle_message(server: &mut Server, client_id: usize, msg: &str) {
                     };
                     let _ = server.telemetry.write(&record);
                     
-                    // Build device info for broadcast
                     let device_update = serde_json::json!({
                         "id": device_id,
                         "latitude": telem.latitude,
@@ -231,7 +289,6 @@ fn handle_message(server: &mut Server, client_id: usize, msg: &str) {
                         "status": "online",
                     });
                     
-                    // Broadcast to UIs
                     server.broadcast_to_uis(&Envelope::new("device:update", &device_update));
                 }
             }
@@ -239,28 +296,58 @@ fn handle_message(server: &mut Server, client_id: usize, msg: &str) {
         
         // UI requesting device list
         "getDevices" => {
-            // Mark as UI client
             if let Some(client) = server.clients.get_mut(&client_id) {
                 client.client_type = ClientType::Ui;
                 
-                // Send device list
                 if let Ok(devices) = server.db.get_all_devices() {
                     let _ = client.ws.send(&Envelope::new("devices:list", &devices).to_json());
                 }
+                
+                // Also send pending pairing requests
+                if let Ok(requests) = server.db.get_pending_pairing_requests() {
+                    let json: Vec<serde_json::Value> = requests.iter().map(|r| {
+                        serde_json::json!({
+                            "device_id": r.device_id,
+                            "name": r.name,
+                            "device_type": r.device_type,
+                            "code": r.code,
+                            "expires_at": r.expires_at
+                        })
+                    }).collect();
+                    let _ = client.ws.send(&Envelope::new("pairing:requests", &serde_json::json!({
+                        "requests": json
+                    })).to_json());
+                }
             }
             println!("✓ GlobalUI connected");
+        }
+        
+        // UI dismissing a pairing request
+        "dismissPairing" => {
+            if let Some(device_id) = envelope.data.get("device_id").and_then(|v| v.as_str()) {
+                let _ = server.db.delete_pairing_request(device_id);
+                println!("✗ Pairing dismissed: {}", device_id);
+            }
+        }
+        
+        // UI revoking a device
+        "revokeDevice" => {
+            if let Some(device_id) = envelope.data.get("device_id").and_then(|v| v.as_str()) {
+                let _ = server.db.delete_device(device_id);
+                server.broadcast_to_uis(&Envelope::new("device:revoked", &serde_json::json!({
+                    "device_id": device_id
+                })));
+                println!("✗ Device revoked: {}", device_id);
+            }
         }
         
         // UI sending command to device
         "sendCommand" => {
             if let Ok(cmd) = serde_json::from_value::<SendCommand>(envelope.data) {
                 let command_id = generate_id();
-                
-                // Save command to DB
                 let payload_str = cmd.payload.to_string();
                 let _ = server.db.save_command(&command_id, &cmd.device_id, &cmd.command_type, &payload_str, "pending");
                 
-                // Send to device
                 let sent = server.send_to_device(&cmd.device_id, &Envelope::new("command", &serde_json::json!({
                     "commandId": command_id,
                     "type": cmd.command_type,
@@ -270,7 +357,6 @@ fn handle_message(server: &mut Server, client_id: usize, msg: &str) {
                 let status = if sent { "sent" } else { "failed" };
                 let _ = server.db.update_command_status(&command_id, status);
                 
-                // Confirm to UI
                 if let Some(client) = server.clients.get_mut(&client_id) {
                     let _ = client.ws.send(&Envelope::new("command:sent", &serde_json::json!({
                         "commandId": command_id,
@@ -288,8 +374,6 @@ fn handle_message(server: &mut Server, client_id: usize, msg: &str) {
             if let Some(command_id) = envelope.data.get("commandId").and_then(|v| v.as_str()) {
                 let status = envelope.data.get("status").and_then(|v| v.as_str()).unwrap_or("acknowledged");
                 let _ = server.db.update_command_status(command_id, status);
-                
-                // Forward to UIs
                 server.broadcast_to_uis(&envelope);
             }
         }
@@ -309,7 +393,6 @@ fn main() {
     println!("  Observable • Reprogrammable • 1000-Year-Proof");
     println!("============================================\n");
     
-    // Initialize server state
     let server = match Server::new() {
         Ok(s) => Arc::new(Mutex::new(s)),
         Err(e) => {
@@ -318,7 +401,21 @@ fn main() {
         }
     };
     
-    // Start TCP listener
+    // Start pairing broadcast thread
+    {
+        let server = Arc::clone(&server);
+        thread::spawn(move || {
+            loop {
+                thread::sleep(Duration::from_millis(PAIRING_BROADCAST_INTERVAL_MS));
+                if let Ok(mut server) = server.lock() {
+                    server.broadcast_pairing_requests();
+                    // Also cleanup expired requests
+                    let _ = server.db.cleanup_expired_requests();
+                }
+            }
+        });
+    }
+    
     let addr = format!("0.0.0.0:{}", PORT);
     let listener = match TcpListener::bind(&addr) {
         Ok(l) => l,
@@ -331,9 +428,12 @@ fn main() {
     println!("✓ Server running on http://localhost:{}", PORT);
     println!("\n  GlobalUI: http://localhost:{}/globalui.html", PORT);
     println!("  WebSocket: ws://localhost:{}", PORT);
+    println!("\n  API Endpoints:");
+    println!("    POST /api/pair/request  - Device requests to join");
+    println!("    POST /api/pair/confirm  - Device confirms with code");
+    println!("    GET  /api/devices       - List paired devices");
     println!("\n============================================\n");
     
-    // Accept connections
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
@@ -347,20 +447,16 @@ fn main() {
     }
 }
 
-/// Handle a single TCP connection.
 fn handle_connection(mut stream: TcpStream, server: Arc<Mutex<Server>>) {
-    // Read HTTP request
     let request = match http::read_request(&mut stream) {
         Ok(r) => r,
         Err(_) => return,
     };
     
-    // Check if this is HTTP or WebSocket
     if http::handle_request(&mut stream, &request, PUBLIC_DIR) {
-        return; // Was HTTP request, done
+        return;
     }
     
-    // WebSocket upgrade
     let ws = match WebSocket::accept(stream, &request) {
         Ok(ws) => ws,
         Err(e) => {
@@ -369,35 +465,29 @@ fn handle_connection(mut stream: TcpStream, server: Arc<Mutex<Server>>) {
         }
     };
     
-    // Register client
     let client_id = {
         let mut server = server.lock().unwrap();
         server.add_client(ws.try_clone().unwrap())
     };
     
-    // Message loop
     let mut ws = ws;
     loop {
-        // Check for messages
         match ws.read() {
             Ok(Some(msg)) => {
                 let mut server = server.lock().unwrap();
                 handle_message(&mut server, client_id, &msg);
             }
             Ok(None) => {
-                // No message available, sleep briefly
-                thread::sleep(std::time::Duration::from_millis(10));
+                thread::sleep(Duration::from_millis(10));
             }
             Err(_) => break,
         }
         
-        // Check if connection closed
         if ws.state != WsState::Open {
             break;
         }
     }
     
-    // Cleanup
     let mut server = server.lock().unwrap();
     server.remove_client(client_id);
 }
@@ -418,7 +508,6 @@ fn generate_id() -> String {
 }
 
 fn rand_u16() -> u16 {
-    // Simple PRNG using time - good enough for IDs
     let t = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_nanos())
